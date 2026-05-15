@@ -43,4 +43,23 @@
 
 ---
 
-## 📂 Estructura del Proyecto
+## 📋 Requisitos de Instalación
+
+1. Clonar el repositorio.
+2. Abrir el proyecto en **Android Studio (Ladybug o superior)**.
+3. Sincronizar Gradle.
+4. Ejecutar en un emulador o dispositivo real con **Android 8.0 (API 26)** o superior para soporte de Notificaciones.
+
+---
+
+## 📸 Demostración de Criterios Críticos
+
+- **Arquitectura Relacional**: `ForeignKey` con `onDelete = ForeignKey.CASCADE`.
+- **Estado Reactivo**: Uso extensivo de `MutableStateFlow` y `SavedStateHandle`.
+- **Validación**: Control de errores mediante `AlertDialogOk`.
+- **DI**: Inyección de DAOs y Database mediante `@Provides` en `AppModule`.
+
+---
+
+## 👨‍💻 Autor
+**Javier Garcia Portillo**
