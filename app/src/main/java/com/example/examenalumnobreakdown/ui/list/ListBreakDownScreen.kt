@@ -1,8 +1,9 @@
 package com.example.examenalumnobreakdown.ui.list
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -43,15 +44,10 @@ fun ListBreakDownScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "CityServices - Averías",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
+                title = { Text("CityServices - Averías", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = onNavigateToCities) {
-                        Icon(imageVector = Icons.Default.LocationCity, contentDescription = "Gestionar Ciudades")
+                        Icon(imageVector = Icons.Default.LocationCity, contentDescription = "Ciudades")
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -62,13 +58,8 @@ fun ListBreakDownScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { onAdd() }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Añadir avería"
-                )
+            FloatingActionButton(onClick = onAdd) {
+                Icon(imageVector = Icons.Filled.Add, contentDescription = "Añadir")
             }
         }
     ) { padding ->
@@ -98,13 +89,14 @@ fun BreakDownListContent(
     var breakToDelete by remember { mutableStateOf<BreakDown?>(null) }
 
     LazyColumn(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         items(items) { item ->
             BreakdownItem(
                 breakDown = item,
-                modifier = Modifier.clickable { onEdit(item) },
+                onEdit = { onEdit(item) },
                 onLongClick = {
                     breakToDelete = item
                     onShowDialog = true
@@ -116,38 +108,39 @@ fun BreakDownListContent(
     if (onShowDialog) {
         AlertDialogOkCancel(
             title = "Eliminar Avería",
-            text = "¿Estás seguro de que deseas eliminar esta avería?",
-            okText = "Confirmar",
+            text = "¿Estás seguro de que deseas eliminar la avería ${breakToDelete?.code}?",
+            okText = "Eliminar",
             cancelText = "Cancelar",
             onConfirm = {
                 breakToDelete?.let { viewModel.delete(it) }
                 onShowDialog = false
             },
-            onDismiss = {
-                onShowDialog = false
-            }
+            onDismiss = { onShowDialog = false }
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BreakdownItem(
-    modifier: Modifier = Modifier, 
     breakDown: BreakDown,
-    onLongClick: () -> Unit = {}
+    onEdit: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 4.dp,
-        modifier = modifier
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onEdit,
+                onLongClick = onLongClick
+            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -158,28 +151,25 @@ fun BreakdownItem(
                 Image(
                     imageVector = breakIcon(),
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp)
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
                 )
             }
             Column(modifier = Modifier.padding(horizontal = 16.dp).weight(1f)) {
                 Text(
-                    text = breakDown.code,
+                    text = "Cód: ${breakDown.code}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Reportado por: ${breakDown.person}",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = "Ciudad ID: ${breakDown.ciudadId}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
-                    text = breakDown.date,
+                    text = "Persona: ${breakDown.person}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            // Botón de borrado rápido o simplemente el long click que ya manejamos en el padre
         }
     }
 }

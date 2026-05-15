@@ -2,21 +2,21 @@ package com.example.examenalumnobreakdown.ui.add
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.breakdown.R
 import com.example.examenalumnobreakdown.ui.base.components.AlertDialogOk
+import com.example.examenalumnobreakdown.ui.helper.NotificationHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +26,8 @@ fun AddBreakDownScreen(
     viewModel: AddViewModel = hiltViewModel()
 ) {
     val state = viewModel.state
-    val exists = viewModel.exists
+    val context = LocalContext.current
+    val notificationHandler = remember { NotificationHandler(context) }
 
     Scaffold(
         topBar = {
@@ -51,7 +52,17 @@ fun AddBreakDownScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.onSave(onBack) }
+                onClick = {
+                    viewModel.onSave { code ->
+                        if (!state.isEditing) {
+                            notificationHandler.showNotification(
+                                "Nueva Avería",
+                                "Se ha insertado la avería con código: $code"
+                            )
+                        }
+                        onBack()
+                    }
+                }
             ) {
                 Icon(
                     imageVector = Icons.Filled.Done,
@@ -67,19 +78,28 @@ fun AddBreakDownScreen(
         )
     }
 
-    if (exists) {
+    // Diálogos de Error (Criterio 7.2)
+    if (state.emptyFields) {
         AlertDialogOk(
-            title = "Error",
-            text = "El código de avería ya existe",
-            onOk = { /* El usuario corrige el código */ }
+            title = "Campos Incompletos",
+            text = "Los campos Código, Persona, Fecha y Ciudad son obligatorios.",
+            onOk = { viewModel.clearErrors() }
         )
     }
 
-    if (viewModel.menor) {
+    if (state.codeTooShort) {
         AlertDialogOk(
-            title = "Error",
-            text = "El código debe tener al menos 3 caracteres",
-            onOk = { /* El usuario corrige el código */ }
+            title = "Código Inválido",
+            text = "La longitud del código ha de ser mayor a tres caracteres.",
+            onOk = { viewModel.clearErrors() }
+        )
+    }
+
+    if (state.codeExists) {
+        AlertDialogOk(
+            title = "Error de Duplicado",
+            text = "El código de la avería ya existe en la base de datos.",
+            onOk = { viewModel.clearErrors() }
         )
     }
 }
@@ -101,7 +121,6 @@ fun ManageBreakDownContent(
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Campo Código
         OutlinedTextField(
             value = state.code,
             onValueChange = { viewModel.onChangeCode(it) },
@@ -111,16 +130,16 @@ fun ManageBreakDownContent(
             enabled = !state.isEditing
         )
 
-        // Selector de Ciudad (Dropdown)
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = !expanded },
             modifier = Modifier.fillMaxWidth()
         ) {
-            val selectedCityName = state.availableCities.find { it.id == state.ciudadId }?.nombre ?: "Selecciona una ciudad"
+            val selectedCity = state.availableCities.find { it.id == state.ciudadId }
+            val textDisplay = selectedCity?.let { "${it.nombre} (${it.cp})" } ?: "Selecciona una ciudad"
             
             OutlinedTextField(
-                value = selectedCityName,
+                value = textDisplay,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Ciudad") },
@@ -134,7 +153,7 @@ fun ManageBreakDownContent(
             ) {
                 state.availableCities.forEach { city ->
                     DropdownMenuItem(
-                        text = { Text(city.nombre) },
+                        text = { Text("${city.nombre} - ${city.cp}") },
                         onClick = {
                             viewModel.onChangeCityId(city.id)
                             expanded = false
@@ -144,7 +163,6 @@ fun ManageBreakDownContent(
             }
         }
 
-        // Campo Persona
         OutlinedTextField(
             value = state.person,
             onValueChange = { viewModel.onChangePerson(it) },
@@ -153,7 +171,6 @@ fun ManageBreakDownContent(
             singleLine = true
         )
 
-        // Campo Fecha
         OutlinedTextField(
             value = state.date,
             onValueChange = { viewModel.onChangeDate(it) },
@@ -162,7 +179,6 @@ fun ManageBreakDownContent(
             singleLine = true
         )
 
-        // Campo Descripción
         OutlinedTextField(
             value = state.description,
             onValueChange = { viewModel.onChangeDescription(it) },

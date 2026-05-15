@@ -21,10 +21,6 @@ class AddViewModel @Inject constructor(
 
     var state by mutableStateOf(AddState())
         private set
-    var exists by mutableStateOf(false)
-        private set
-    var menor by mutableStateOf(false)
-        private set
 
     init {
         loadCities()
@@ -59,30 +55,43 @@ class AddViewModel @Inject constructor(
     }
 
     fun onChangeCode(s: String){
-        state = state.copy(code = s)
+        state = state.copy(code = s, codeExists = false, codeTooShort = false, emptyFields = false)
     }
     fun onChangeCityId(id: Int){
-        state = state.copy(ciudadId = id)
+        state = state.copy(ciudadId = id, emptyFields = false)
     }
     fun onChangePerson(s: String){
-        state = state.copy(person = s)
+        state = state.copy(person = s, emptyFields = false)
     }
     fun onChangeDate(s: String){
-        state = state.copy(date = s)
+        state = state.copy(date = s, emptyFields = false)
     }
     fun onChangeDescription(s: String){
         state = state.copy(description = s)
     }
 
-    fun onSave(onSuccess: () -> Unit){
+    fun clearErrors() {
+        state = state.copy(emptyFields = false, codeTooShort = false, codeExists = false)
+    }
+
+    fun onSave(onSuccess: (String) -> Unit){
         viewModelScope.launch {
-            if(state.code.length < 3){
-                menor = true
+            // 1. Validación de campos vacíos (Punto 7.2 del examen)
+            if (state.code.isBlank() || state.person.isBlank() || state.date.isBlank() || state.ciudadId == null) {
+                state = state.copy(emptyFields = true)
                 return@launch
             }
-            
-            if (state.ciudadId == null) {
-                // Validación básica de ciudad
+
+            // 2. Longitud del código > 3 (Punto 7.2 del examen)
+            if (state.code.length <= 3) {
+                state = state.copy(codeTooShort = true)
+                return@launch
+            }
+
+            // 3. Verificación de existencia (Punto 7.1 del examen)
+            // Solo si no estamos editando (si editamos, el código puede ser el mismo)
+            if (!state.isEditing && repository.existsBreakDown(state.code)) {
+                state = state.copy(codeExists = true)
                 return@launch
             }
 
@@ -95,18 +104,13 @@ class AddViewModel @Inject constructor(
                 description = state.description
             )
 
-            // Solo verificamos si existe el código si estamos CREANDO una nueva
-            if(!state.isEditing && repository.existsBreakDown(state.code)) {
-                exists = true
+            if (state.isEditing) {
+                repository.updateBreakDown(breakDown)
             } else {
-                if (state.isEditing) {
-                    repository.updateBreakDown(breakDown)
-                } else {
-                    repository.insertBreakDown(breakDown)
-                }
-                exists = false
-                onSuccess()
+                repository.insertBreakDown(breakDown)
             }
+
+            onSuccess(state.code)
         }
     }
 }
