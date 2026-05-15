@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">ExamenAlumnoBreakDown</string>
+    <string name="save_description">Guardar\n</string>
+    <string name="tvCode">Codigo</string>
+    <string name="edtCode">Codigo</string>
+    <string name="tvCity">Ciudad</string>
+    <string name="edCity">Ciudad</string>
+    <string name="tvPerson">Persona</string>
+    <string name="edPerson">Persona</string>
+    <string name="tvTitleDate">Fecha</string>
+    <string name="edDate">Fecha</string>
+    <string name="tvDescription">Descripcion</string>
+    <string name="progress_message">Cargando...</string>
+    <string name="message_offline">Offline</string>
+</resources>
